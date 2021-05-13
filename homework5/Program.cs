@@ -50,7 +50,7 @@ namespace homework5
 			}
 		}
 
-		public static void AddOrder()
+		public static async void AddOrder()
 		{
 			Console.WriteLine("Выбрана команда добавления заказа, продолжить?");
 			Console.Write("(для продолжения введите y (или любой другой символ, исключая n), для прекращения введите n)");
@@ -60,10 +60,11 @@ namespace homework5
 			Console.Write("Описание: ");
 			string description = Console.ReadLine();
 			string dataString = numCommand + "_" + description;
-			Console.WriteLine(SendMessage(dataString));
+			string ans = await SendMessage(dataString);
+			Console.WriteLine(ans);
 		}
 
-		public static void StatusOrder()
+		public static async void StatusOrder()
 		{
 			Console.WriteLine("Выбрана команда показа статуса заказа, продолжить?");
 			Console.WriteLine("Потребуется номер заказа, если не знаете/не помните, используйте поиск");
@@ -74,10 +75,10 @@ namespace homework5
 			Console.Write("Номер заказа: ");
 			string numOerder = Console.ReadLine();
 			string dataString = numCommand + "_" + numOerder;
-			Console.WriteLine(SendMessage(dataString));
+			Console.WriteLine(await SendMessage(dataString));
 		}
 
-		public static void CancelOrder()
+		public static async void CancelOrder()
 		{
 			Console.WriteLine("Выбрана команда отмены заказа, продолжить?");
 			Console.Write("(для продолжения введите y (или любой другой символ, исключая n), для прекращения введите n)");
@@ -87,8 +88,8 @@ namespace homework5
 			Console.Write("Номер заказа: ");
 			string numOerder = Console.ReadLine();
 			string dataString = numCommand + "_" + numOerder;
-			Console.WriteLine(SendMessage(dataString));
-		}		
+			Console.WriteLine(await SendMessage(dataString));
+		}
 
 		public static async Task<string> SendMessage(string Message)
 		{

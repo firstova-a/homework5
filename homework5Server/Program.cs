@@ -13,37 +13,34 @@ namespace homework5Server
 		const int port = 2365;
 		static bool isRunning;
 		static AtistContext context = new AtistContext();
-		static List<UdpReceiveResult> commandList = new List<UdpReceiveResult>();
+		public static Queue<UdpReceiveResult> commandsList = new Queue<UdpReceiveResult>();
 
-		static async Task Work()
+		static async Task Listener()
 		{
 			while (isRunning)
 			{
 				UdpReceiveResult datagram = await client.ReceiveAsync();
-				//AddCommandInQueue(datagram);
-				string text = Encoding.UTF8.GetString(datagram.Buffer);
-				Console.WriteLine($"got \"{text}\" from client");
-				string[] commandList = text.Split("_");
-				string answer = await decryptCommand(commandList);
-				byte[] answerDatagram = Encoding.UTF8.GetBytes(answer);
-				await client.SendAsync(answerDatagram, answerDatagram.Length, datagram.RemoteEndPoint);
+				commandsList.Enqueue(datagram);
 			}
-			context.Dispose();
 		}
 
 		static async Task RunCommand()
 		{
-			/*while(isRunning)
+			while (isRunning)
 			{
-				UdpReceiveResult datagram = GetCommandFromQueue();
-				string text = Encoding.UTF8.GetString(datagram.Buffer);
-				Console.WriteLine($"got \"{text}\" from client");
-				string[] commandList = text.Split("_");
-				string answer = await decryptCommand(commandList);
-				byte[] answerDatagram = Encoding.UTF8.GetBytes(answer);
-				await client.SendAsync(answerDatagram, answerDatagram.Length, datagram.RemoteEndPoint);
+				UdpReceiveResult datagram;
+				bool flag = commandsList.TryDequeue(out datagram);
+				if (flag)
+				{
+					string text = Encoding.UTF8.GetString(datagram.Buffer);
+					Console.WriteLine($"got \"{text}\" from client");
+					string[] commandList = text.Split("_");
+					string answer = await decryptCommand(commandList);
+					byte[] answerDatagram = Encoding.UTF8.GetBytes(answer);
+					await client.SendAsync(answerDatagram, answerDatagram.Length, datagram.RemoteEndPoint);
+				}
 			}
-			context.Dispose();*/
+			context.Dispose();
 		}
 
 
@@ -63,7 +60,7 @@ namespace homework5Server
 				Console.WriteLine("Problem with connect DB");
 			}
 			isRunning = true;
-			Task runTask = Work();
+			Task runTask = Listener();
 			Task runTask2 = RunCommand();
 			Console.ReadLine();
 			isRunning = false;
@@ -73,38 +70,7 @@ namespace homework5Server
 
 		public static void SetDB()
 		{
-
 			context.SaveChanges();
-		}
-
-		public static void AddCommandInQueue(UdpReceiveResult datagram)
-		{
-			/* add command in queue */
-			commandList.Add(datagram);
-		}
-
-		public static UdpReceiveResult GetCommandFromQueue()
-		{
-			UdpReceiveResult nextCommand;
-			try 
-			{
-				nextCommand = commandList[0];
-				ReducingTheQueue();
-			}
-			catch
-			{
-				Console.WriteLine("No commands in the queue");
-			}
-			return nextCommand;
-		}
-
-		public static void ReducingTheQueue()
-		{
-			for(int i = 1; i<commandList.Count; i++)
-			{
-				commandList[i - 1] = commandList[i];
-			}
-			commandList.Remove(commandList[commandList.Count - 1]);
 		}
 
 		public static async Task<string> decryptCommand(string[] commandArray)
@@ -115,6 +81,7 @@ namespace homework5Server
 				/*Сделать заказ*/
 				try
 				{
+					await Task.Delay(2500);
 					ArtOrder newOrder = new ArtOrder
 					{
 						Description = commandArray[1]
@@ -123,6 +90,8 @@ namespace homework5Server
 					context.SaveChanges();
 					ArtOrder order = context.Orders.SingleOrDefault(u => u.Description == commandArray[1]);
 					answer = "Your order is registered. Your order number:" + order.Id.ToString();
+
+					//answer = "Answer for query 1";
 				}
 				catch
 				{
@@ -134,8 +103,10 @@ namespace homework5Server
 				/*Узнать статус заказа*/
 				try
 				{
+					await Task.Delay(3500);
+					ArtOrder Order = context.Orders.SingleOrDefault(ord => ord.Id == Convert.ToInt32(commandArray[1]));
 
-					answer = "Order number: " + "Status: ";
+					answer = $"Order status is {Order.Done}";
 				}
 				catch
 				{
@@ -147,9 +118,12 @@ namespace homework5Server
 				/*Отменить заказ*/
 				try
 				{
-					context.SaveChanges();
+					await Task.Delay(3500);
+					ArtOrder Order = context.Orders.SingleOrDefault(ord => ord.Id == Convert.ToInt32(commandArray[1]));
+					Order.Done = ArtOrder.Status.rejected;
+					await context.SaveChangesAsync();
 
-					answer = "Order number: " + "Status: ";
+					answer = $"Order status is {Order.Done}";
 				}
 				catch
 				{
